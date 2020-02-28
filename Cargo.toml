@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 crossterm = "0.16.0"
+subprocess = "0.2.4"
 
 [lib]
 name = "color_lexer"

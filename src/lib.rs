@@ -1,3 +1,4 @@
+use crossterm::terminal::enable_raw_mode;
 use crossterm::{
     event::{read, Event, KeyCode},
     terminal::disable_raw_mode,
@@ -7,9 +8,10 @@ use std::process::exit;
 
 pub fn print_events() {
     let mut print_prompt = true;
+    let mut buffer = String::new();
     loop {
         if print_prompt {
-            print!(">>> ");
+            print!("\x1b[32mrustsh\x1b[33m> \x1b[m");
             print_prompt = false;
         }
         stdout().flush().unwrap();
@@ -20,10 +22,23 @@ pub fn print_events() {
                     code: m,
                     modifiers: _,
                 } => match m {
-                    KeyCode::Char(v) => parse(lex(v)),
+                    KeyCode::Char(v) => {
+                        parse(lex(v));
+                        &buffer.push(v);
+                    }
                     KeyCode::Enter => {
-                        print_prompt = true;
                         println!("\r");
+                        let output = subprocess::Exec::shell(&buffer)
+                            .stdout(subprocess::Redirection::Pipe)
+                            .capture()
+                            .unwrap()
+                            .stdout_str();
+                        disable_raw_mode().unwrap();
+                        print!("{}\r", output);
+                        enable_raw_mode().unwrap();
+                        &buffer.clear();
+                        print_prompt = true;
+                        print!("\r");
                     }
                     _ => {}
                 },
