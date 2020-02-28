@@ -56,7 +56,6 @@ pub enum Token {
     Charater(char),
 }
 
-#[allow(dead_code)]
 pub fn lex(input: char) -> Token {
     match input {
         '0'..='9' => return Token::Number(input),
