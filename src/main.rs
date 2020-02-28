@@ -1,12 +1,8 @@
-mod lib;
-
-use std::io::Write;
-use std::io::{stdout, stdin};
+use color_lexer::print_events;
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 
 fn main() {
-    let mut input = String::new();
-    print!(">>> ");
-    stdout().flush().unwrap();
-    stdin().read_line(&mut input);
-    lib::lex(&input);
+    enable_raw_mode().unwrap();
+    print_events();
+    disable_raw_mode().unwrap();
 }

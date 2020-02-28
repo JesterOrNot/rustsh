@@ -1,3 +1,42 @@
+use crossterm::{
+    event::{read, Event, KeyCode},
+    terminal::disable_raw_mode,
+};
+use std::io::{stdout, Write};
+use std::process::exit;
+
+pub fn print_events() {
+    let mut print_prompt = true;
+    loop {
+        if print_prompt {
+            print!(">>> ");
+            print_prompt = false;
+        }
+        stdout().flush().unwrap();
+        let event = read().unwrap();
+        match event {
+            Event::Key(n) => match n {
+                crossterm::event::KeyEvent {
+                    code: m,
+                    modifiers: _,
+                } => match m {
+                    KeyCode::Char(v) => print!("{}", v),
+                    KeyCode::Enter => {
+                        print_prompt = true;
+                        println!("\r");
+                    },
+                    _ => {}
+                },
+            },
+            _ => {}
+        }
+        if event == Event::Key(KeyCode::Esc.into()) {
+            disable_raw_mode().unwrap();
+            exit(0);
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     Number(i32),
