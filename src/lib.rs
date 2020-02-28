@@ -20,7 +20,7 @@ pub fn print_events() {
                     code: m,
                     modifiers: _,
                 } => match m {
-                    KeyCode::Char(v) => print!("{}", v),
+                    KeyCode::Char(v) => parse(lex(v)),
                     KeyCode::Enter => {
                         print_prompt = true;
                         println!("\r");
@@ -38,9 +38,17 @@ pub fn print_events() {
     }
 }
 
+pub fn parse(token: Token) {
+    match token {
+        Token::Number(n) => print!("\x1b[31m{}\x1b[m",n),
+        Token::CloseParenth(n) | Token::OpenParenth(n) | Token::Whitespace(n) | Token::Charater(n) => print!("{}", n),
+        Token::Operator(n) => print!("\x1b[35m{}\x1b[m", n)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
-    Number(i32),
+    Number(char),
     Whitespace(char),
     Operator(char),
     OpenParenth(char),
@@ -49,42 +57,13 @@ pub enum Token {
 }
 
 #[allow(dead_code)]
-pub fn lex(input: &String) -> Result<Vec<Token>, String> {
-    let mut result = Vec::new();
-    let mut it = input.chars().peekable();
-    while let Some(&c) = it.peek() {
-        match c {
-            '0'..='9' => {
-                let mut tmp = String::new();
-                tmp.push(*it.peek().unwrap());
-                it.next();
-                while !it.peek().is_none() && ('0'..='9').contains(it.peek().unwrap()) {
-                    tmp.push(*it.peek().unwrap());
-                    it.next();
-                }
-                result.push(Token::Number((tmp).parse::<i32>().unwrap()));
-            }
-            '+' | '*' | '-' | '/' => {
-                result.push(Token::Operator(c));
-                it.next();
-            }
-            '(' => {
-                result.push(Token::OpenParenth(c));
-                it.next();
-            }
-            ')' => {
-                result.push(Token::CloseParenth(c));
-                it.next();
-            }
-            ' ' => {
-                result.push(Token::Whitespace(c));
-                it.next();
-            }
-            _ => {
-                result.push(Token::Charater(c));
-                it.next();
-            }
-        }
+pub fn lex(input: char) -> Token {
+    match input {
+        '0'..='9' => return Token::Number(input),
+        '+' | '*' | '-' | '/' => return Token::Operator(input),
+        '(' => return Token::OpenParenth(input),
+        ')' => return Token::CloseParenth(input),
+        ' ' => return Token::Whitespace(input),
+        _ => return Token::Charater(input),
     }
-    Ok(result)
 }
