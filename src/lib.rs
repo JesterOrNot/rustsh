@@ -32,6 +32,7 @@ pub fn print_events() {
         }
         if event == Event::Key(KeyCode::Esc.into()) {
             disable_raw_mode().unwrap();
+            println!();
             exit(0);
         }
     }
