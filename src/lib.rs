@@ -26,29 +26,37 @@ pub fn print_events() {
                         parse(lex(v));
                         &buffer.push(v);
                     }
-                    KeyCode::Enter => {
-                        println!("\r");
-                        let output = subprocess::Exec::shell(&buffer)
-                            .stdout(subprocess::Redirection::Pipe)
-                            .capture()
-                            .unwrap()
-                            .stdout_str();
-                        disable_raw_mode().unwrap();
-                        print!("{}\r", output);
-                        enable_raw_mode().unwrap();
-                        &buffer.clear();
-                        print_prompt = true;
-                        print!("\r");
+                    KeyCode::Enter => match buffer.as_str() {
+                        "exit" => {
+                            disable_raw_mode().unwrap();
+                            println!();
+                            exit(0);
+                        }
+                        _ => {
+                            println!("\r");
+                            disable_raw_mode().unwrap();
+                            let output = subprocess::Exec::shell(&buffer)
+                                .stdout(subprocess::Redirection::Merge)
+                                .capture()
+                                .unwrap()
+                                .stdout_str();
+                            print!("{}\r", output);
+                            enable_raw_mode().unwrap();
+                            &buffer.clear();
+                            print_prompt = true;
+                            print!("\r");
+                        }
+                    },
+                    KeyCode::Backspace => {
+                        if buffer.len() != 0 {
+                            print!("\x1b[1D\x1b[0K");
+                        }
+                        &buffer.pop();
                     }
                     _ => {}
                 },
             },
             _ => {}
-        }
-        if event == Event::Key(KeyCode::Esc.into()) {
-            disable_raw_mode().unwrap();
-            println!();
-            exit(0);
         }
     }
 }
@@ -84,3 +92,4 @@ pub fn lex(input: char) -> Token {
         _ => return Token::Charater(input),
     }
 }
+
