@@ -24,7 +24,7 @@ pub fn print_events() {
                     KeyCode::Enter => {
                         print_prompt = true;
                         println!("\r");
-                    },
+                    }
                     _ => {}
                 },
             },
@@ -40,9 +40,12 @@ pub fn print_events() {
 
 pub fn parse(token: Token) {
     match token {
-        Token::Number(n) => print!("\x1b[31m{}\x1b[m",n),
-        Token::CloseParenth(n) | Token::OpenParenth(n) | Token::Whitespace(n) | Token::Charater(n) => print!("{}", n),
-        Token::Operator(n) => print!("\x1b[35m{}\x1b[m", n)
+        Token::Number(n) => print!("\x1b[31m{}\x1b[m", n),
+        Token::CloseParenth(n)
+        | Token::OpenParenth(n)
+        | Token::Whitespace(n)
+        | Token::Charater(n) => print!("{}", n),
+        Token::Operator(n) => print!("\x1b[35m{}\x1b[m", n),
     }
 }
 
