@@ -6,4 +6,3 @@ fn main() {
     print_events();
     disable_raw_mode().unwrap();
 }
-

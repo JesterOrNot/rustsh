@@ -92,4 +92,3 @@ pub fn lex(input: char) -> Token {
         _ => return Token::Charater(input),
     }
 }
-
