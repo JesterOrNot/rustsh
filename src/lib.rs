@@ -8,6 +8,7 @@ use std::process::exit;
 
 pub fn print_events() {
     let mut print_prompt = true;
+    let mut cursor_position = 0;
     let mut buffer = String::new();
     loop {
         if print_prompt {
@@ -25,6 +26,7 @@ pub fn print_events() {
                     KeyCode::Char(v) => {
                         parse(lex(v));
                         &buffer.push(v);
+                        cursor_position+=1;
                     }
                     KeyCode::Enter => match buffer.as_str() {
                         "exit" => {
@@ -38,16 +40,20 @@ pub fn print_events() {
                             let output = execute_command(&buffer);
                             print!("{}\r", output);
                             enable_raw_mode().unwrap();
+                            print!("\r");
+                            cursor_position = 0;
                             &buffer.clear();
                             print_prompt = true;
-                            print!("\r");
                         }
                     },
                     KeyCode::Backspace => {
-                        if buffer.len() != 0 {
+                        if cursor_position > 0 {
+                            cursor_position-=1;
+                            &buffer.remove(cursor_position);
+                        }
+                        if cursor_position != 0 {
                             print!("\x1b[1D\x1b[0K");
                         }
-                        &buffer.pop();
                     }
                     _ => {}
                 },
