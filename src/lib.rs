@@ -7,13 +7,15 @@ use std::io::{stdout, Write};
 use std::process::exit;
 
 pub fn print_events() {
-    let mut print_prompt = true;
+    let mut cursor_position = 0;
     let mut buffer = String::new();
     loop {
-        if print_prompt {
-            print!("\x1b[32mrustsh\x1b[33m> \x1b[m");
-            print_prompt = false;
-        }
+        // Move to the left, clear line, print prompt
+        print!("\x1b[1000D\x1b[0K\x1b[32mrustsh\x1b[33m> \x1b[m");
+        // Print buffer
+        print_buffer(&buffer);
+        // Move to the left and move to the right cursor position
+        print!("\x1b[1000D\x1b[{}C", cursor_position + 8);
         stdout().flush().unwrap();
         let event = read().unwrap();
         match event {
@@ -23,8 +25,24 @@ pub fn print_events() {
                     modifiers: _,
                 } => match m {
                     KeyCode::Char(v) => {
-                        parse(lex(v));
-                        &buffer.push(v);
+                        &buffer.insert(cursor_position, v);
+                        cursor_position += 1;
+                    }
+                    KeyCode::Backspace => {
+                        if cursor_position > 0 {
+                            cursor_position -= 1;
+                            &buffer.remove(cursor_position);
+                        }
+                    }
+                    KeyCode::Left => {
+                        if cursor_position > 0 {
+                            cursor_position -= 1;
+                        }
+                    }
+                    KeyCode::Right => {
+                        if cursor_position < buffer.len() {
+                            cursor_position += 1;
+                        }
                     }
                     KeyCode::Enter => match buffer.as_str() {
                         "exit" => {
@@ -38,17 +56,11 @@ pub fn print_events() {
                             let output = execute_command(&buffer);
                             print!("{}\r", output);
                             enable_raw_mode().unwrap();
-                            &buffer.clear();
-                            print_prompt = true;
                             print!("\r");
+                            cursor_position = 0;
+                            &buffer.clear();
                         }
                     },
-                    KeyCode::Backspace => {
-                        if buffer.len() != 0 {
-                            print!("\x1b[1D\x1b[0K");
-                        }
-                        &buffer.pop();
-                    }
                     _ => {}
                 },
             },
@@ -92,5 +104,11 @@ pub fn lex(input: char) -> Token {
         ')' => return Token::CloseParenth(input),
         ' ' => return Token::Whitespace(input),
         _ => return Token::Charater(input),
+    }
+}
+
+pub fn print_buffer(buf: &String) {
+    for i in buf.chars().collect::<Vec<char>>() {
+        parse(lex(i));
     }
 }
