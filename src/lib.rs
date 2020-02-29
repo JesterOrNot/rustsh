@@ -35,11 +35,7 @@ pub fn print_events() {
                         _ => {
                             println!("\r");
                             disable_raw_mode().unwrap();
-                            let output = subprocess::Exec::shell(&buffer)
-                                .stdout(subprocess::Redirection::Merge)
-                                .capture()
-                                .unwrap()
-                                .stdout_str();
+                            let output = execute_command(&buffer);
                             print!("{}\r", output);
                             enable_raw_mode().unwrap();
                             &buffer.clear();
@@ -59,6 +55,14 @@ pub fn print_events() {
             _ => {}
         }
     }
+}
+
+pub fn execute_command(cmd: &String) -> String {
+    return subprocess::Exec::shell(cmd)
+        .stdout(subprocess::Redirection::Merge)
+        .capture()
+        .unwrap()
+        .stdout_str();
 }
 
 pub fn parse(token: Token) {
