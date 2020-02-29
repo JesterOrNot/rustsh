@@ -26,7 +26,7 @@ pub fn print_events() {
                     KeyCode::Char(v) => {
                         parse(lex(v));
                         &buffer.push(v);
-                        cursor_position+=1;
+                        cursor_position += 1;
                     }
                     KeyCode::Enter => match buffer.as_str() {
                         "exit" => {
@@ -48,10 +48,8 @@ pub fn print_events() {
                     },
                     KeyCode::Backspace => {
                         if cursor_position > 0 {
-                            cursor_position-=1;
+                            cursor_position -= 1;
                             &buffer.remove(cursor_position);
-                        }
-                        if cursor_position != 0 {
                             print!("\x1b[1D\x1b[0K");
                         }
                     }
