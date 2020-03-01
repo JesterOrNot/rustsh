@@ -1,2 +1,2 @@
-# ColorPrompt
-An as you type syntax highlighter in the terminal
+# rustsh
+Terminal with cool as you type syntax highlighting
