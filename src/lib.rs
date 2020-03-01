@@ -67,12 +67,12 @@ pub fn execute_command(cmd: &String) -> String {
 
 pub fn parse(token: Token) {
     match token {
-        Token::Number(n) => print!("\x1b[31m{}\x1b[m", n),
+        Token::Number(n) => print!("\x1b[1;36m{}\x1b[m", n),
         Token::CloseParenth(n)
         | Token::OpenParenth(n)
         | Token::Whitespace(n)
         | Token::Charater(n) => print!("{}", n),
-        Token::Operator(n) => print!("\x1b[35m{}\x1b[m", n),
+        Token::Operator(n) => print!("\x1b[1;32m{}\x1b[m", n),
     }
 }
 

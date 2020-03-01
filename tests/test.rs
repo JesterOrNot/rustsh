@@ -1,5 +1,5 @@
-use color_lexer::lex;
-use color_lexer::Token;
+use rustsh::lex;
+use rustsh::Token;
 
 #[test]
 pub fn test_lex() {
