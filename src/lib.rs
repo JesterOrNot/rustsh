@@ -161,7 +161,7 @@ pub fn parse(tokens: Vec<Token>) {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
-    Number(i32),
+    Number(char),
     Builtin(String),
     Word(String),
     Whitespace(char),
@@ -177,14 +177,8 @@ pub fn lex(input: &String) -> Vec<Token> {
     while let Some(&c) = it.peek() {
         match c {
             '0'..='9' => {
-                let mut tmp = String::new();
-                tmp.push(*it.peek().unwrap());
+                result.push(Token::Number(c));
                 it.next();
-                while !it.peek().is_none() && ('0'..='9').contains(it.peek().unwrap()) {
-                    tmp.push(*it.peek().unwrap());
-                    it.next();
-                }
-                result.push(Token::Number((tmp).parse::<i32>().unwrap()));
             }
             '+' | '*' | '-' | '/' => {
                 result.push(Token::Operator(c));
