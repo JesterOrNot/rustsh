@@ -1,11 +1,9 @@
-use crossterm::terminal::enable_raw_mode;
 use crossterm::{
     event::{read, Event, KeyCode},
-    terminal::disable_raw_mode,
+    terminal::{disable_raw_mode, enable_raw_mode},
 };
 use std::env::{set_var, var, var_os};
-use std::fs::create_dir_all;
-use std::fs::{File, OpenOptions};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{stdout, BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::exit;
@@ -112,7 +110,11 @@ pub fn init() {
         format!("{}/.rustsh", var("HOME").unwrap().as_str()),
     );
     create_dir_all(var_os("rustsh_home").unwrap().to_str().unwrap()).unwrap();
-    File::create(var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt").unwrap();
+    OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt")
+        .unwrap();
 }
 
 pub fn lines_from_file<T: AsRef<Path>>(filename: T) -> impl Iterator<Item = String> {
@@ -144,18 +146,24 @@ pub fn execute_command(cmd: &String) -> String {
         .stdout_str();
 }
 
-pub fn parse(token: Token) {
-    match token {
-        Token::Number(n) => print!("\x1b[1;36m{}\x1b[m", n),
-        Token::CloseParenth(n) | Token::OpenParenth(n) => print!("\x1b[1;35m{}\x1b[m", n),
-        Token::Whitespace(n) | Token::Charater(n) => print!("{}", n),
-        Token::Operator(n) => print!("\x1b[1;32m{}\x1b[m", n),
+pub fn parse(tokens: Vec<Token>) {
+    for i in tokens {
+        match i {
+            Token::Number(n) => print!("\x1b[1;36m{}\x1b[m", n),
+            Token::CloseParenth(n) | Token::OpenParenth(n) => print!("\x1b[1;35m{}\x1b[m", n),
+            Token::Whitespace(n) | Token::Charater(n) => print!("{}", n),
+            Token::Word(n) => print!("{}", n),
+            Token::Operator(n) => print!("\x1b[1;32m{}\x1b[m", n),
+            Token::Builtin(n) => print!("\x1b[1;33m{}\x1b[m", n),
+        }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
-    Number(char),
+    Number(i32),
+    Builtin(String),
+    Word(String),
     Whitespace(char),
     Operator(char),
     OpenParenth(char),
@@ -163,19 +171,70 @@ pub enum Token {
     Charater(char),
 }
 
-pub fn lex(input: char) -> Token {
-    match input {
-        '0'..='9' => return Token::Number(input),
-        '+' | '*' | '-' | '/' => return Token::Operator(input),
-        '(' => return Token::OpenParenth(input),
-        ')' => return Token::CloseParenth(input),
-        ' ' => return Token::Whitespace(input),
-        _ => return Token::Charater(input),
+pub fn lex(input: &String) -> Vec<Token> {
+    let mut result = Vec::new();
+    let mut it = input.chars().peekable();
+    while let Some(&c) = it.peek() {
+        match c {
+            '0'..='9' => {
+                let mut tmp = String::new();
+                tmp.push(*it.peek().unwrap());
+                it.next();
+                while !it.peek().is_none() && ('0'..='9').contains(it.peek().unwrap()) {
+                    tmp.push(*it.peek().unwrap());
+                    it.next();
+                }
+                result.push(Token::Number((tmp).parse::<i32>().unwrap()));
+            }
+            '+' | '*' | '-' | '/' => {
+                result.push(Token::Operator(c));
+                it.next();
+            }
+            '(' => {
+                result.push(Token::OpenParenth(c));
+                it.next();
+            }
+            ')' => {
+                result.push(Token::CloseParenth(c));
+                it.next();
+            }
+            ' ' => {
+                result.push(Token::Whitespace(c));
+                it.next();
+            }
+            'e' => {
+                let mut tmp = String::new();
+                let mut do_push = false;
+                tmp.push(*it.peek().unwrap());
+                it.next();
+                let target = "xit".chars().collect::<Vec<char>>();
+                let mut pos: usize = 0;
+                while !it.peek().is_none() && pos < 3 {
+                    if target.get(pos).unwrap() != it.peek().unwrap() {
+                        break;
+                    }
+                    if pos == 2 && *target.get(pos).unwrap() == 't' {
+                        do_push = true;
+                    }
+                    tmp.push(*it.peek().unwrap());
+                    it.next();
+                    pos += 1;
+                }
+                if do_push {
+                    result.push(Token::Builtin(tmp));
+                } else {
+                    result.push(Token::Word(tmp));
+                }
+            }
+            _ => {
+                result.push(Token::Charater(c));
+                it.next();
+            }
+        }
     }
+    return result;
 }
 
 pub fn print_buffer(buf: &String) {
-    for i in buf.chars().collect::<Vec<char>>() {
-        parse(lex(i));
-    }
+    parse(lex(buf));
 }
