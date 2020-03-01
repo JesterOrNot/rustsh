@@ -28,6 +28,25 @@ pub fn print_events() {
                         &buffer.push(v);
                         cursor_position += 1;
                     }
+                    KeyCode::Backspace => {
+                        if cursor_position > 0 {
+                            cursor_position -= 1;
+                            &buffer.remove(cursor_position);
+                            print!("\x1b[1D\x1b[0K");
+                        }
+                    }
+                    KeyCode::Left => {
+                        if cursor_position > 0 {
+                            cursor_position -= 1;
+                            print!("\x1b[1D");
+                        }
+                    }
+                    KeyCode::Right => {
+                        if cursor_position > 0 {
+                            cursor_position += 1;
+                            print!("\x1b[1C");
+                        }
+                    }
                     KeyCode::Enter => match buffer.as_str() {
                         "exit" => {
                             disable_raw_mode().unwrap();
@@ -44,13 +63,6 @@ pub fn print_events() {
                             cursor_position = 0;
                             &buffer.clear();
                             print_prompt = true;
-                        }
-                    },
-                    KeyCode::Backspace => {
-                        if cursor_position > 0 {
-                            cursor_position -= 1;
-                            &buffer.remove(cursor_position);
-                            print!("\x1b[1D\x1b[0K");
                         }
                     }
                     _ => {}
