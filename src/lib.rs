@@ -117,7 +117,7 @@ pub fn init() {
         .unwrap();
 }
 
-pub fn lines_from_file<T: AsRef<Path>>(filename: T) -> impl Iterator<Item = String> {
+fn lines_from_file<T: AsRef<Path>>(filename: T) -> impl Iterator<Item = String> {
     let file = File::open(filename);
     let file = match file {
         Ok(n) => n,
@@ -130,7 +130,7 @@ pub fn lines_from_file<T: AsRef<Path>>(filename: T) -> impl Iterator<Item = Stri
     buf.lines().map(|l| l.expect("Could not parse line"))
 }
 
-pub fn get_command(n: usize) -> String {
+fn get_command(n: usize) -> String {
     match lines_from_file(var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt").nth(n)
     {
         Some(n) => n,
@@ -138,7 +138,7 @@ pub fn get_command(n: usize) -> String {
     }
 }
 
-pub fn execute_command(cmd: &String) -> String {
+fn execute_command(cmd: &String) -> String {
     return subprocess::Exec::shell(cmd)
         .stdout(subprocess::Redirection::Merge)
         .capture()
@@ -146,7 +146,7 @@ pub fn execute_command(cmd: &String) -> String {
         .stdout_str();
 }
 
-pub fn parse(tokens: Vec<Token>) {
+fn parse(tokens: Vec<Token>) {
     for i in tokens {
         match i {
             Token::Number(n) => print!("\x1b[1;36m{}\x1b[m", n),
@@ -229,6 +229,6 @@ pub fn lex(input: &String) -> Vec<Token> {
     return result;
 }
 
-pub fn print_buffer(buf: &String) {
+fn print_buffer(buf: &String) {
     parse(lex(buf));
 }
