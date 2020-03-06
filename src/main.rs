@@ -1,7 +1,7 @@
-use std::process::exit;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use rustsh::{execute_command, init, print_events};
 use std::io::stdin;
+use std::process::exit;
 use termion::is_tty;
 
 fn main() {
