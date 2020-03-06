@@ -2,7 +2,7 @@ use crossterm::{
     event::{read, Event, KeyCode},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use std::env::{set_var, var, var_os};
+use std::env::{current_dir, set_var, var, var_os};
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{stdout, BufRead, BufReader, Write};
 use std::path::Path;
@@ -20,27 +20,30 @@ pub fn print_events() {
     let mut buffer = String::new();
     loop {
         // Move to the left, clear line, print prompt
-        print!("\x1b[1000D\x1b[0K\x1b[32mrustsh\x1b[33m> \x1b[m");
+        print!(
+            "\x1b[1000D\x1b[0K({}) \x1b[32mrustsh\x1b[33m> \x1b[m",
+            current_dir().unwrap().display()
+        );
         // Print buffer
         print_buffer(&buffer);
         // Move to the left and move to the right cursor position
-        print!("\x1b[1000D\x1b[{}C", cursor_position + 8);
+        print!(
+            "\x1b[1000D\x1b[{}C",
+            cursor_position + 11 + current_dir().unwrap().display().to_string().len()
+        );
         stdout().flush().unwrap();
         let event = read().unwrap();
-        match event {
-            Event::Key(n) => match n {
-                crossterm::event::KeyEvent {
-                    code: m,
-                    modifiers: _,
-                } => match m {
+        if let Event::Key(n) = event {
+            match n {
+                crossterm::event::KeyEvent { code: m, .. } => match m {
                     KeyCode::Char(v) => {
-                        &buffer.insert(cursor_position, v);
+                        buffer.insert(cursor_position, v);
                         cursor_position += 1;
                     }
                     KeyCode::Backspace => {
                         if cursor_position > 0 {
                             cursor_position -= 1;
-                            &buffer.remove(cursor_position);
+                            buffer.remove(cursor_position);
                         }
                     }
                     KeyCode::Left => {
@@ -85,7 +88,7 @@ pub fn print_events() {
                         }
                         _ => {
                             println!("\r");
-                            &file.write(format!("{}\n", buffer).as_bytes()).unwrap();
+                            file.write_all(format!("{}\n", buffer).as_bytes()).unwrap();
                             positon += 1;
                             disable_raw_mode().unwrap();
                             let output = execute_command(&buffer);
@@ -93,17 +96,15 @@ pub fn print_events() {
                             enable_raw_mode().unwrap();
                             print!("\r");
                             cursor_position = 0;
-                            &buffer.clear();
+                            buffer.clear();
                         }
                     },
                     _ => {}
                 },
-            },
-            _ => {}
+            }
         }
     }
 }
-
 pub fn init() {
     set_var(
         "rustsh_home",
@@ -138,12 +139,12 @@ fn get_command(n: usize) -> String {
     }
 }
 
-pub fn execute_command(cmd: &String) -> String {
-    return subprocess::Exec::shell(cmd)
+pub fn execute_command(cmd: &str) -> String {
+    subprocess::Exec::shell(cmd.to_string())
         .stdout(subprocess::Redirection::Merge)
         .capture()
         .unwrap()
-        .stdout_str();
+        .stdout_str()
 }
 
 fn parse(tokens: Vec<Token>) {
@@ -171,7 +172,7 @@ pub enum Token {
     Charater(char),
 }
 
-pub fn lex(input: &String) -> Vec<Token> {
+pub fn lex(input: &str) -> Vec<Token> {
     let mut result = Vec::new();
     let mut it = input.chars().peekable();
     while let Some(&c) = it.peek() {
@@ -203,7 +204,7 @@ pub fn lex(input: &String) -> Vec<Token> {
                 it.next();
                 let target = "xit".chars().collect::<Vec<char>>();
                 let mut pos: usize = 0;
-                while !it.peek().is_none() && pos < 3 {
+                while it.peek().is_some() && pos < 3 {
                     if target.get(pos).unwrap() != it.peek().unwrap() {
                         break;
                     }
@@ -226,9 +227,9 @@ pub fn lex(input: &String) -> Vec<Token> {
             }
         }
     }
-    return result;
+    result
 }
 
-fn print_buffer(buf: &String) {
+fn print_buffer(buf: &str) {
     parse(lex(buf));
 }
