@@ -138,7 +138,7 @@ fn get_command(n: usize) -> String {
     }
 }
 
-fn execute_command(cmd: &String) -> String {
+pub fn execute_command(cmd: &String) -> String {
     return subprocess::Exec::shell(cmd)
         .stdout(subprocess::Redirection::Merge)
         .capture()
