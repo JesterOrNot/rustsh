@@ -1,5 +1,5 @@
 use crossterm::{
-    event::{read, Event, KeyCode},
+    event::{read, Event, KeyCode, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use std::env::{current_dir, set_var, var, var_os};
@@ -21,7 +21,7 @@ pub fn print_events() {
     loop {
         // Move to the left, clear line, print prompt
         print!(
-            "\x1b[1000D\x1b[0K({}) \x1b[32mrustsh\x1b[33m> \x1b[m",
+            "\x1b[1000D\x1b[0K\x1b[36m({}) \x1b[32mrustsh\x1b[33m> \x1b[m",
             current_dir().unwrap().display()
         );
         // Print buffer
@@ -35,11 +35,31 @@ pub fn print_events() {
         let event = read().unwrap();
         if let Event::Key(n) = event {
             match n {
-                crossterm::event::KeyEvent { code: m, .. } => match m {
-                    KeyCode::Char(v) => {
-                        buffer.insert(cursor_position, v);
-                        cursor_position += 1;
-                    }
+                crossterm::event::KeyEvent {
+                    code: m,
+                    modifiers: z,
+                } => match m {
+                    KeyCode::Char(v) => match z {
+                        KeyModifiers::CONTROL => {
+                            buffer.clear();
+                            cursor_position = 0;
+                            match v {
+                                'd' => {
+                                    disable_raw_mode().unwrap();
+                                    println!();
+                                    exit(0);
+                                }
+                                _ => {
+                                    println!("^{}", v.to_uppercase());
+                                    continue;
+                                }
+                            }
+                        }
+                        _ => {
+                            buffer.insert(cursor_position, v);
+                            cursor_position += 1;
+                        }
+                    },
                     KeyCode::Backspace => {
                         if cursor_position > 0 {
                             cursor_position -= 1;
