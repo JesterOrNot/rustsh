@@ -13,4 +13,3 @@ termion = "*"
 
 [lib]
 name = "rustsh"
-src = "src/lib.rs"

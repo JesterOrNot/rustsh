@@ -1,12 +1,13 @@
-use std::process::exit;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use rustsh::{execute_command, init, print_events};
+use std::fs::File;
 use std::io::stdin;
+use std::process::exit;
 use termion::is_tty;
 
 fn main() {
     init();
-    if is_tty(&std::fs::File::open("/dev/stdin").unwrap()) {
+    if is_tty(&File::open("/dev/stdin").unwrap()) {
         enable_raw_mode().unwrap();
         print_events();
         disable_raw_mode().unwrap();
