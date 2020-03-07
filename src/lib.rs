@@ -103,6 +103,9 @@ pub fn print_events() {
                             println!();
                             exit(0);
                         }
+                        "help" => {
+                            help(&mut buffer, &mut cursor_position);
+                        }
                         "" => {
                             println!("\r");
                         }
@@ -149,6 +152,17 @@ fn lines_from_file<T: AsRef<Path>>(filename: T) -> impl Iterator<Item = String> 
     };
     let buf = BufReader::new(file);
     buf.lines().map(|l| l.expect("Could not parse line"))
+}
+
+pub fn help(buffer: &mut String, cursor_position: &mut usize) {
+    let is_tty = termion::is_tty(&File::open("/dev/stdin").unwrap());
+    if is_tty {
+        disable_raw_mode().unwrap();
+    }
+    println!("\nCommands\nHelp -- Displays this help message\nexit -- Exits rustsh");
+    buffer.clear();
+    *cursor_position = 0;
+    enable_raw_mode().unwrap();
 }
 
 fn get_command(n: usize) -> String {
@@ -216,6 +230,30 @@ pub fn lex(input: &str) -> Vec<Token> {
             ' ' => {
                 result.push(Token::Whitespace(c));
                 it.next();
+            }
+            'h' => {
+                let mut tmp = String::new();
+                let mut do_push = false;
+                tmp.push(*it.peek().unwrap());
+                it.next();
+                let target = "elp".chars().collect::<Vec<char>>();
+                let mut pos: usize = 0;
+                while it.peek().is_some() && pos < 3 {
+                    if target.get(pos).unwrap() != it.peek().unwrap() {
+                        break;
+                    }
+                    if pos == 2 && *target.get(pos).unwrap() == 'p' {
+                        do_push = true;
+                    }
+                    tmp.push(*it.peek().unwrap());
+                    it.next();
+                    pos += 1;
+                }
+                if do_push {
+                    result.push(Token::Builtin(tmp));
+                } else {
+                    result.push(Token::Word(tmp));
+                }
             }
             'e' => {
                 let mut tmp = String::new();
