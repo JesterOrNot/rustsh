@@ -1,5 +1,5 @@
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use rustsh::{execute_command, init, print_events, help};
+use rustsh::{execute_command, help, init, print_events};
 use std::fs::File;
 use std::io::stdin;
 use std::process::exit;
@@ -17,6 +17,6 @@ fn main() {
     stdin().read_line(&mut buffer).unwrap();
     match buffer.as_str() {
         "help" => help(&mut buffer, &mut 0),
-        _ => print!("{}", execute_command(&buffer))
+        _ => print!("{}", execute_command(&buffer)),
     }
 }
