@@ -1,7 +1,9 @@
+use logos::Lexer;
 use crossterm::{
     event::{read, Event, KeyCode, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
+use logos::Logos;
 use std::env::{current_dir, set_var, var, var_os};
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{stdout, BufRead, BufReader, Write};
@@ -167,89 +169,44 @@ pub fn execute_command(cmd: &str) -> String {
         .stdout_str()
 }
 
-fn parse(tokens: Vec<Token>) {
-    for i in tokens {
-        match i {
-            Token::Number(n) => print!("\x1b[1;36m{}\x1b[m", n),
-            Token::CloseParenth(n) | Token::OpenParenth(n) => print!("\x1b[1;35m{}\x1b[m", n),
-            Token::Whitespace(n) | Token::Charater(n) => print!("{}", n),
-            Token::Word(n) => print!("{}", n),
-            Token::Operator(n) => print!("\x1b[1;32m{}\x1b[m", n),
-            Token::Builtin(n) => print!("\x1b[1;33m{}\x1b[m", n),
+fn parse(mut tokens: Lexer<Token, &str>) {
+    while tokens.token != Token::End {
+        match tokens.token {
+            Token::Number => print!("\x1b[1;36m{}\x1b[m", tokens.slice()),
+            Token::StringLiteral => print!("\x1b[36m{}\x1b[m", tokens.slice()),
+            Token::CloseParenth | Token::OpenParenth => print!("\x1b[1;35m{}\x1b[m", tokens.slice()),
+            Token::Operator => print!("\x1b[1;32m{}\x1b[m", tokens.slice()),
+            Token::Exit => print!("\x1b[1;33m{}\x1b[m", tokens.slice()),
+            _ => print!("{}", tokens.slice())
         }
+        tokens.advance();
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Logos, Debug, Clone, PartialEq, Eq)]
 pub enum Token {
-    Number(char),
-    Builtin(String),
-    Word(String),
-    Whitespace(char),
-    Operator(char),
-    OpenParenth(char),
-    CloseParenth(char),
-    Charater(char),
-}
-
-pub fn lex(input: &str) -> Vec<Token> {
-    let mut result = Vec::new();
-    let mut it = input.chars().peekable();
-    while let Some(&c) = it.peek() {
-        match c {
-            '0'..='9' => {
-                result.push(Token::Number(c));
-                it.next();
-            }
-            '+' | '*' | '-' | '/' => {
-                result.push(Token::Operator(c));
-                it.next();
-            }
-            '(' => {
-                result.push(Token::OpenParenth(c));
-                it.next();
-            }
-            ')' => {
-                result.push(Token::CloseParenth(c));
-                it.next();
-            }
-            ' ' => {
-                result.push(Token::Whitespace(c));
-                it.next();
-            }
-            'e' => {
-                let mut tmp = String::new();
-                let mut do_push = false;
-                tmp.push(*it.peek().unwrap());
-                it.next();
-                let target = "xit".chars().collect::<Vec<char>>();
-                let mut pos: usize = 0;
-                while it.peek().is_some() && pos < 3 {
-                    if target.get(pos).unwrap() != it.peek().unwrap() {
-                        break;
-                    }
-                    if pos == 2 && *target.get(pos).unwrap() == 't' {
-                        do_push = true;
-                    }
-                    tmp.push(*it.peek().unwrap());
-                    it.next();
-                    pos += 1;
-                }
-                if do_push {
-                    result.push(Token::Builtin(tmp));
-                } else {
-                    result.push(Token::Word(tmp));
-                }
-            }
-            _ => {
-                result.push(Token::Charater(c));
-                it.next();
-            }
-        }
-    }
-    result
+    #[end]
+    End,
+    #[error]
+    Error,
+    #[regex = "[0-9]+"]
+    Number,
+    #[token = "exit"]
+    Exit,
+    #[regex = "[a-zA-Z]+"]
+    Word,
+    #[token = " "]
+    Whitespace,
+    #[regex = "[\\+-/\\*]"]
+    Operator,
+    #[token = "("]
+    OpenParenth,
+    #[token = ")"]
+    CloseParenth,
+    #[regex = "\"[^\"]*\""]
+    StringLiteral
 }
 
 fn print_buffer(buf: &str) {
-    parse(lex(buf));
+    parse(Token::lexer(buf));
 }
