@@ -105,6 +105,13 @@ pub fn print_events() {
                             println!();
                             exit(0);
                         }
+                        "help" => {
+                            disable_raw_mode().unwrap();
+                            println!("\nCommands\n-------\nhelp --- Displays this help message\nexit --- exits the terminal");
+                            enable_raw_mode().unwrap();
+                            cursor_position = 0;
+                            buffer.clear();
+                        }
                         "" => {
                             println!("\r");
                         }
@@ -176,7 +183,7 @@ fn parse(mut tokens: Lexer<Token, &str>) {
             Token::StringLiteral => print!("\x1b[36m{}\x1b[m", tokens.slice()),
             Token::CloseParenth | Token::OpenParenth => print!("\x1b[1;35m{}\x1b[m", tokens.slice()),
             Token::Operator => print!("\x1b[1;32m{}\x1b[m", tokens.slice()),
-            Token::Exit => print!("\x1b[1;33m{}\x1b[m", tokens.slice()),
+            Token::Exit | Token::Help => print!("\x1b[1;33m{}\x1b[m", tokens.slice()),
             _ => print!("{}", tokens.slice())
         }
         tokens.advance();
@@ -201,6 +208,8 @@ pub enum Token {
     Operator,
     #[token = "("]
     OpenParenth,
+    #[token = "help"]
+    Help,
     #[token = ")"]
     CloseParenth,
     #[regex = "\"[^\"]*\""]
