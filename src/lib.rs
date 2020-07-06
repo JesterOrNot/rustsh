@@ -212,7 +212,7 @@ pub enum Token {
     Help,
     #[token = ")"]
     CloseParenth,
-    #[regex = "\"[^\"]*\""]
+    #[regex = "\"[^\"]*\"|\'[^\']*\'"]
     StringLiteral
 }
 
