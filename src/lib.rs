@@ -1,5 +1,6 @@
 use logos::Lexer;
 use crossterm::{
+    Result,
     event::{read, Event, KeyCode, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
@@ -10,31 +11,31 @@ use std::io::{stdout, BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::exit;
 
-pub fn print_events() {
+pub fn print_events() -> Result<()> {
     let mut cursor_position = 0;
     let mut file = OpenOptions::new()
         .create(true)
         .write(true)
-        .open(var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt")
+        .open(var("HOME").expect("There is something wrong with your Enviornment Variables Set $HOME").as_str().to_owned() + "/.rustsh/history.txt")
         .unwrap();
-    let mut positon =
+    let mut position =
         lines_from_file(var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt").count();
     let mut buffer = String::new();
     loop {
         // Move to the left, clear line, print prompt
         print!(
             "\x1b[1000D\x1b[0K\x1b[36m({}) \x1b[32mrustsh\x1b[33m> \x1b[m",
-            current_dir().unwrap().display()
+            current_dir()?.display()
         );
         // Print buffer
         print_buffer(&buffer);
         // Move to the left and move to the right cursor position
         print!(
             "\x1b[1000D\x1b[{}C",
-            cursor_position + 11 + current_dir().unwrap().display().to_string().len()
+            cursor_position + 11 + current_dir()?.display().to_string().len()
         );
-        stdout().flush().unwrap();
-        let event = read().unwrap();
+        stdout().flush()?;
+        let event = read()?;
         if let Event::Key(n) = event {
             match n {
                 crossterm::event::KeyEvent {
@@ -47,7 +48,7 @@ pub fn print_events() {
                             cursor_position = 0;
                             match v {
                                 'd' => {
-                                    disable_raw_mode().unwrap();
+                                    disable_raw_mode()?;
                                     println!();
                                     exit(0);
                                 }
@@ -79,36 +80,36 @@ pub fn print_events() {
                         }
                     }
                     KeyCode::Up => {
-                        if positon > 0 {
-                            positon -= 1;
+                        if position > 0 {
+                            position -= 1;
                         }
                         print!("\x1b[1000D\x1b[0K\x1b[32mrustsh\x1b[33m> \x1b[m");
-                        buffer = get_command(positon);
+                        buffer = get_command(position);
                         print!("\x1b[1000D");
                         cursor_position = buffer.len();
                     }
                     KeyCode::Down => {
-                        if positon
+                        if position
                             < lines_from_file(
                                 var("HOME").unwrap().as_str().to_owned() + "/.rustsh/history.txt",
                             )
                             .count()
                         {
-                            positon += 1;
+                            position += 1;
                         }
-                        buffer = get_command(positon);
+                        buffer = get_command(position);
                         cursor_position = buffer.len();
                     }
                     KeyCode::Enter => match buffer.as_str() {
                         "exit" => {
-                            disable_raw_mode().unwrap();
+                            disable_raw_mode()?;
                             println!();
                             exit(0);
                         }
                         "help" => {
-                            disable_raw_mode().unwrap();
+                            disable_raw_mode()?;
                             println!("\nCommands\n-------\nhelp --- Displays this help message\nexit --- exits the terminal");
-                            enable_raw_mode().unwrap();
+                            enable_raw_mode()?;
                             cursor_position = 0;
                             buffer.clear();
                         }
@@ -117,12 +118,12 @@ pub fn print_events() {
                         }
                         _ => {
                             println!("\r");
-                            file.write_all(format!("{}\n", buffer).as_bytes()).unwrap();
-                            positon += 1;
-                            disable_raw_mode().unwrap();
+                            file.write_all(format!("{}\n", buffer).as_bytes())?;
+                            position += 1;
+                            disable_raw_mode()?;
                             let output = execute_command(&buffer);
                             print!("{}\r", output);
-                            enable_raw_mode().unwrap();
+                            enable_raw_mode()?;
                             print!("\r");
                             cursor_position = 0;
                             buffer.clear();
@@ -134,6 +135,7 @@ pub fn print_events() {
         }
     }
 }
+
 pub fn init() {
     set_var(
         "rustsh_home",
